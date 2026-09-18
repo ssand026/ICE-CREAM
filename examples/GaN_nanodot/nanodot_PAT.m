@@ -13,11 +13,11 @@ psi_f = states(:,nf);
 
 % get transition diagnostics
 [muRot,rotT] = rotate_dipoles(psi_i,psi_f,mu);
-QSL = get_QSL("fermi",states,H,M);
+QSL = get_QSL("levi",states,H,M);
 TDM = vecnorm(get_TDM(states,mu),2,3);
 
 % determine the timestep/span values
-numQSL = 20;		% multiply by the QSL to obtain the total time
+numQSL = 40;		% multiply by the QSL to obtain the total time
 tMult = 10 * fs;	% ensure total duration is a multiple of tMult
 
 T = ceil(numQSL * QSL(ni,nf)/tMult)*tMult;
