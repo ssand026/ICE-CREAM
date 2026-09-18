@@ -1,50 +1,52 @@
-function [QSL] = get_QSL(kind,states,H,M)
-% returns the quantum speed limit (QSL) for transitions between every
-% combination of states given in the basis "psi", given as an array of 
-% column-vectors. The first input determines the type of QSL returned
-% by the function, i.e. Mandelstam-Tamm, Margolus-Levitin, or Fermi.
+function [QSL] = get_QSL(kind,psi,H,M)
+% GET_QSL returns the quantum speed limits for transitions between the basis states "psi".
+% 
+% Returns the an array containing the quantum speed-limits (QSLs) for transitions between each
+% combination of states in the basis set "psi", which is given as an array of column vectors. The
+% first input determines the whether the returned QSL array is obtained from the Mandelstam-Tamm or 
+% from the Margolus-Levitin QSL. Specify the overlap matrix M if the basis is non-orthogonal.
 arguments (Input)
-	kind (1,1) {mustBeMember(kind,["tamm","levi","fermi"])}
-	states (:,:) double
+	kind (1,1) {mustBeMember(kind,["tamm","levi"])}
+	psi (:,:) double
 	H double {mustBeSquare}
 	M double {mustBeSquare} = [];
 end
 arguments (Output)
-	QSL (:,:) double
+	QSL (:,:) double {mustBeReal}
 end
 
 % normalize the state vectors
-states = norm_wavefunc(states,M);
-
-% compute the energy of each state
-H_psi = (H * states);
-expval_H = real(sum(conj(states) .* H_psi,1));
+psi = norm_wavefunc(psi,M);
 
 % compute the state overlap angles
 if iseye(M)
-	qAngle = abs(acos(abs(states' * (M * states))));
+	qAngle = acos(abs(psi' * psi));
 else
-	qAngle = abs(acos(abs(states' * states)));
+	qAngle = acos(abs(psi' * (M * psi)));
 end
+qAngle = abs(qAngle);
+
+% compute the energy of each state
+H_psi = (H * psi);
+expval_H = sum(conj(psi) .* H_psi,1);
 
 % get the quantum speed limit QSL(i,j) for transitions between psi(:,i)->psi(:,j)
 switch kind
 	case "tamm"
 		% return the Mandelstam-Tamm QSL
-		expval_HH = real(sum(conj(states) .* (H * H_psi),1));
-		E_unc = sqrt(expval_HH - expval_H.^2); % energy uncertainty
-		QSL = qAngle ./ abs(E_unc + E_unc.')/2;
+		if iseye(M)
+			expval_HH = real(sum(conj(psi) .* (H * H_psi),1));
+		else
+			expval_HH = real(sum(conj(psi) .* (H * (M\H_psi)),1));
+		end
+		E_unc = sqrt(abs(expval_HH - expval_H.^2)); % energy uncertainty
+		QSL = 2*qAngle ./ (E_unc + E_unc.');
 	case "levi"
 		% return the Margolus-Levitin QSL
-		E_min = min(expval_H); % energy of the lowest-occupied state
-		E_avg = (expval_H + expval_H.')/2; % average energy
-		QSL = qAngle ./ abs(E_avg - E_min);
-	case "fermi"
-		% return the Heisenberg uncertainty QSL
-		QSL = 4 * qAngle ./ abs(expval_H - expval_H.');
+		QSL = 2*qAngle ./ abs(expval_H - expval_H.');
 end
 
-% fix invalid QSL values
+% remove invalid QSL values
 QSL(~isfinite(QSL)) = NaN;
 
 % DONE
