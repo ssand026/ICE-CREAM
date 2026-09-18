@@ -10,7 +10,7 @@ mu = muB;
 TDM = vecnorm(get_TDM(states,mu,"noDiags",true),2,3);
 
 % display the coupling array
-% figure; imagesc(TDM); axis image
+figure; imagesc(TDM); axis image
 
 % find the first several strongest couplings
 %-----------------------------------------------------------
@@ -22,7 +22,6 @@ strength = strength/max(strength); % convert to relative coupling strengths
 couplingList = [ni,nf,strength];
 clearvars num ni nf upperIndex maxIndex strength
 
-% disp(couplingList)
 
 %% run QC for states with strong magnetic coupling
 %-----------------------------------------------------------
@@ -32,8 +31,8 @@ psi_i = states(:,1);
 psi_f = states(:,[6,7])*[1;-1i]/sqrt(2);
 
 % set the timestep/simulation duration
-QSL = get_QSL("fermi",[psi_i,psi_f],H,M);
-T = 14 * QSL(1,2);
+QSL = get_QSL("levi",[psi_i,psi_f],H,M);
+T = 28 * QSL(1,2);
 T = ceil(T/(1000*fs))*(1000*fs); % round to multiple of 1000 fs
 fprintf("T = %i fs \n",round(T/fs));
 
@@ -58,4 +57,4 @@ QC_opts = { ...
 % run the multi-state quantum control algorithm
 [P,Pt,dP,field,psiFwd,exitFlag] = optimize_field(psi_i,psi_f',tgrid,field,H,mu,M,QC_opts{:});
 
-% save("ice_cream_QC.mat")
+save("ice_cream_QC.mat")
